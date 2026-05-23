@@ -1,11 +1,15 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import PhotoInput from './components/PhotoInput';
 import CanvasPreview from './components/CanvasPreview';
 import FramePicker from './components/FramePicker';
 import SlotEditor from './components/SlotEditor';
+import AdjustPanel from './components/AdjustPanel';
 import { frames } from './frames/definitions';
 import type { FrameDefinition, SlotAdjust } from './frames/types';
 import { DEFAULT_ADJUST } from './frames/types';
+import type { Adjustments } from './lib/imageProcessing';
+import { NEUTRAL_ADJUSTMENTS, NO_TONE } from './lib/imageProcessing';
+import { getPreset } from './lib/filters';
 
 function makeDefaultAdjusts(count: number): SlotAdjust[] {
   return Array.from({ length: count }, () => ({ ...DEFAULT_ADJUST }));
@@ -16,6 +20,18 @@ function App() {
   const [frame, setFrame] = useState<FrameDefinition>(frames[0]);
   const [slotAdjusts, setSlotAdjusts] = useState<SlotAdjust[]>(() => makeDefaultAdjusts(4));
   const [selectedSlot, setSelectedSlot] = useState<number | null>(null);
+  const [adjustments, setAdjustments] = useState<Adjustments>(NEUTRAL_ADJUSTMENTS);
+  const [filterId, setFilterId] = useState('original');
+
+  const tone = useMemo(() => getPreset(filterId)?.tone ?? NO_TONE, [filterId]);
+
+  const handleSelectFilter = useCallback((id: string) => {
+    const preset = getPreset(id);
+    if (!preset) return;
+    setFilterId(id);
+    // 프리셋은 슬라이더 값을 설정하고, 스무딩은 사용자 설정을 유지.
+    setAdjustments((a) => ({ ...NEUTRAL_ADJUSTMENTS, ...preset.adjustments, smoothing: a.smoothing }));
+  }, []);
 
   const handleImagesChange = useCallback((imgs: string[]) => setImages(imgs), []);
 
@@ -54,6 +70,8 @@ function App() {
               frame={frame}
               images={images}
               adjusts={slotAdjusts}
+              adjustments={adjustments}
+              tone={tone}
               selectedSlot={selectedSlot}
               onSlotClick={handleSlotClick}
             />
@@ -78,6 +96,17 @@ function App() {
         )}
 
         <PhotoInput onImagesChange={handleImagesChange} />
+
+        <div className="border-t border-[#E5E5E5]">
+          <p className="px-4 pt-4 text-[13px] text-[#8A8A8A]">보정</p>
+          <AdjustPanel
+            adjustments={adjustments}
+            filterId={filterId}
+            onChangeAdjustments={setAdjustments}
+            onSelectFilter={handleSelectFilter}
+            sampleImage={images[0] ?? null}
+          />
+        </div>
 
         <div className="border-t border-[#E5E5E5]">
           <p className="px-4 pt-4 text-[13px] text-[#8A8A8A]">프레임 선택</p>

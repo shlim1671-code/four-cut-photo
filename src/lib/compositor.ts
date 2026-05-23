@@ -18,14 +18,16 @@ function drawRoundRect(
   ctx.closePath();
 }
 
+type ImageSource = HTMLImageElement | HTMLCanvasElement;
+
 function drawImage(
   ctx: CanvasRenderingContext2D,
-  img: HTMLImageElement,
+  img: ImageSource,
   sx: number, sy: number, sw: number, sh: number,
   adj: SlotAdjust
 ) {
-  const iw = img.naturalWidth;
-  const ih = img.naturalHeight;
+  const iw = img instanceof HTMLCanvasElement ? img.width : img.naturalWidth;
+  const ih = img instanceof HTMLCanvasElement ? img.height : img.naturalHeight;
   const isSwapped = adj.rotation === 90 || adj.rotation === 270;
   const fitW = isSwapped ? sh : sw;
   const fitH = isSwapped ? sw : sh;
@@ -52,7 +54,7 @@ const DEFAULT_ADJ: SlotAdjust = { panX: 0, panY: 0, zoom: 1, flipH: false, rotat
 export function composite(
   canvas: HTMLCanvasElement,
   frame: FrameDefinition,
-  images: (HTMLImageElement | null)[],
+  images: (ImageSource | null)[],
   longestSidePx: number,
   adjusts?: (SlotAdjust | null)[]
 ): void {
