@@ -34,8 +34,8 @@ export const NEUTRAL_ADJUSTMENTS: Adjustments = {
 
 export const NO_TONE: ToneEffects = { monochrome: false, vignette: 0, fade: 0 };
 
-// 피부 스무딩 최대 강도. 과하게 걸면 부자연스러우므로 상한을 둔다.
-export const MAX_SMOOTHING = 50;
+// 피부 스무딩 최대 강도. 윤곽이 무너지지 않고 "살짝 매끄러운" 수준에 머물도록 보수적으로 둔다.
+export const MAX_SMOOTHING = 20;
 
 // 필름식 흑백 변환 가중치. 표준 luma보다 적색을 살짝 올려 피부가 밝게 나오게 한다.
 const MONO_R = 0.4;
@@ -67,8 +67,12 @@ function smoothstep(e0: number, e1: number, x: number): number {
 // 경계는 살리고 평평한 면만 매끄럽게 (surface blur 근사 = 휘도 차 기반 bilateral).
 function smoothSurface(data: Uint8ClampedArray, w: number, h: number, strength: number): void {
   const radius = 2;
-  const amount = Math.min(1, strength / MAX_SMOOTHING);
-  const sigmaRange = 8 + strength * 1.2;
+  const norm = Math.min(1, strength / MAX_SMOOTHING);
+  // 블렌드 상한을 둬서 최대로 올려도 원본을 일부 유지 — 윤곽이 무너지지 않게.
+  const amount = norm * 0.7;
+  // range(색차) 가중치를 보수적으로: 작은 sigma는 평평한 피부 면만 흐리고
+  // 턱선·이목구비처럼 명암 차가 큰 경계는 가중치를 급격히 떨어뜨려 보존한다.
+  const sigmaRange = 5 + norm * 5;
 
   const rangeLUT = new Float32Array(256);
   for (let d = 0; d < 256; d++) {
