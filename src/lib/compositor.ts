@@ -1,4 +1,5 @@
 import type { FrameDefinition } from '../frames/types';
+import type { SlotAdjust } from '../frames/types';
 
 function drawRoundRect(
   ctx: CanvasRenderingContext2D,
@@ -17,13 +18,45 @@ function drawRoundRect(
   ctx.closePath();
 }
 
+function drawImage(
+  ctx: CanvasRenderingContext2D,
+  img: HTMLImageElement,
+  sx: number, sy: number, sw: number, sh: number,
+  adj: SlotAdjust
+) {
+  const iw = img.naturalWidth;
+  const ih = img.naturalHeight;
+  const isSwapped = adj.rotation === 90 || adj.rotation === 270;
+  const fitW = isSwapped ? sh : sw;
+  const fitH = isSwapped ? sw : sh;
+
+  const baseScale = Math.max(fitW / iw, fitH / ih);
+  const srcW = fitW / baseScale / adj.zoom;
+  const srcH = fitH / baseScale / adj.zoom;
+
+  const centerX = (iw - srcW) / 2;
+  const centerY = (ih - srcH) / 2;
+  const srcX = Math.max(0, Math.min(iw - srcW, centerX - adj.panX * srcW));
+  const srcY = Math.max(0, Math.min(ih - srcH, centerY - adj.panY * srcH));
+
+  ctx.save();
+  ctx.translate(sx + sw / 2, sy + sh / 2);
+  if (adj.flipH) ctx.scale(-1, 1);
+  ctx.rotate((adj.rotation * Math.PI) / 180);
+  ctx.drawImage(img, srcX, srcY, srcW, srcH, -fitW / 2, -fitH / 2, fitW, fitH);
+  ctx.restore();
+}
+
+const DEFAULT_ADJ: SlotAdjust = { panX: 0, panY: 0, zoom: 1, flipH: false, rotation: 0 };
+
 export function composite(
   canvas: HTMLCanvasElement,
   frame: FrameDefinition,
   images: (HTMLImageElement | null)[],
-  longestSidePx: number
+  longestSidePx: number,
+  adjusts?: (SlotAdjust | null)[]
 ): void {
-  const { aspectRatio } = frame; // width / height
+  const { aspectRatio } = frame;
   const canvasW = aspectRatio >= 1
     ? longestSidePx
     : Math.round(longestSidePx * aspectRatio);
@@ -49,6 +82,7 @@ export function composite(
     const sw = slot.w * canvasW;
     const sh = slot.h * canvasH;
     const img = images[i] ?? null;
+    const adj = adjusts?.[i] ?? DEFAULT_ADJ;
 
     ctx.save();
     if (slotRadius > 0) {
@@ -61,14 +95,7 @@ export function composite(
     }
 
     if (img) {
-      const iw = img.naturalWidth;
-      const ih = img.naturalHeight;
-      const scale = Math.max(sw / iw, sh / ih);
-      const srcW = sw / scale;
-      const srcH = sh / scale;
-      const srcX = (iw - srcW) / 2;
-      const srcY = (ih - srcH) / 2;
-      ctx.drawImage(img, srcX, srcY, srcW, srcH, sx, sy, sw, sh);
+      drawImage(ctx, img, sx, sy, sw, sh, adj);
     } else {
       ctx.fillStyle = '#D4D4D4';
       ctx.fillRect(sx, sy, sw, sh);
