@@ -1,11 +1,13 @@
 import { useEffect, useRef, useCallback } from 'react';
 import type { SlotAdjust, FrameSlot } from '../../frames/types';
+import { computeSlotCrop } from '../../lib/slotGeometry';
 
 interface SlotEditorProps {
   slotIndex: number;
   image: string;
   adjust: SlotAdjust;
   slot: FrameSlot;
+  frameAspect: number;
   onChange: (adj: SlotAdjust) => void;
   onClose: () => void;
 }
@@ -23,17 +25,7 @@ function renderPreview(canvas: HTMLCanvasElement, img: HTMLImageElement, adj: Sl
   ctx.fillStyle = '#D4D4D4';
   ctx.fillRect(0, 0, sw, sh);
 
-  const isSwapped = adj.rotation === 90 || adj.rotation === 270;
-  const fitW = isSwapped ? sh : sw;
-  const fitH = isSwapped ? sw : sh;
-
-  const baseScale = Math.max(fitW / iw, fitH / ih);
-  const srcW = fitW / baseScale / adj.zoom;
-  const srcH = fitH / baseScale / adj.zoom;
-  const centerX = (iw - srcW) / 2;
-  const centerY = (ih - srcH) / 2;
-  const srcX = Math.max(0, Math.min(iw - srcW, centerX - adj.panX * srcW));
-  const srcY = Math.max(0, Math.min(ih - srcH, centerY - adj.panY * srcH));
+  const { srcX, srcY, srcW, srcH, fitW, fitH } = computeSlotCrop(iw, ih, sw, sh, adj);
 
   ctx.save();
   ctx.translate(sw / 2, sh / 2);
@@ -43,7 +35,7 @@ function renderPreview(canvas: HTMLCanvasElement, img: HTMLImageElement, adj: Sl
   ctx.restore();
 }
 
-export default function SlotEditor({ slotIndex, image, adjust, slot, onChange, onClose }: SlotEditorProps) {
+export default function SlotEditor({ slotIndex, image, adjust, slot, frameAspect, onChange, onClose }: SlotEditorProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imgRef = useRef<HTMLImageElement | null>(null);
   const adjustRef = useRef(adjust);
@@ -55,7 +47,9 @@ export default function SlotEditor({ slotIndex, image, adjust, slot, onChange, o
   useEffect(() => { adjustRef.current = adjust; }, [adjust]);
   useEffect(() => { onChangeRef.current = onChange; }, [onChange]);
 
-  const slotAspect = slot.w / slot.h;
+  // 칸의 실제 픽셀 비율은 프레임 비율까지 반영해야 합성 결과와 일치한다.
+  // (compositor에서 칸 폭=slot.w*canvasW, 높이=slot.h*canvasH, canvasW/canvasH=frameAspect)
+  const slotAspect = (slot.w / slot.h) * frameAspect;
 
   // Load image and set canvas dimensions
   useEffect(() => {

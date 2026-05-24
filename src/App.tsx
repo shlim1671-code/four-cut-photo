@@ -155,6 +155,7 @@ function App() {
                 image={images[activeSlot]}
                 adjust={slotAdjusts[activeSlot] ?? DEFAULT_ADJUST}
                 slot={frame.slots[activeSlot]}
+                frameAspect={frame.aspectRatio}
                 onChange={(adj) => handleAdjustChange(activeSlot, adj)}
                 onClose={() => setSelectedSlot(null)}
               />
