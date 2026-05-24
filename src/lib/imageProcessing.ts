@@ -37,6 +37,9 @@ export const NO_TONE: ToneEffects = { monochrome: false, vignette: 0, fade: 0 };
 // 피부 스무딩 최대 강도. 윤곽이 무너지지 않고 "살짝 매끄러운" 수준에 머물도록 보수적으로 둔다.
 export const MAX_SMOOTHING = 20;
 
+// 피부 보정 토글 on일 때의 고정 강도 (자연스러운 수준). 사용자에게 슬라이더를 노출하지 않는다.
+export const SKIN_SMOOTHING_ON = 14;
+
 // 필름식 흑백 변환 가중치. 표준 luma보다 적색을 살짝 올려 피부가 밝게 나오게 한다.
 const MONO_R = 0.4;
 const MONO_G = 0.45;

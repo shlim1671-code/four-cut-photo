@@ -2,11 +2,12 @@ import { useEffect, useRef, useState } from 'react';
 
 interface PhotoInputProps {
   onImagesChange: (images: string[]) => void;
+  initialImages?: string[];
 }
 
-export default function PhotoInput({ onImagesChange }: PhotoInputProps) {
-  const [mode, setMode] = useState<'upload' | 'webcam'>('upload');
-  const [images, setImages] = useState<string[]>([]);
+export default function PhotoInput({ onImagesChange, initialImages = [] }: PhotoInputProps) {
+  const [mode, setMode] = useState<'upload' | 'webcam'>('webcam');
+  const [images, setImages] = useState<string[]>(initialImages);
   const [isDragging, setIsDragging] = useState(false);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [countdown, setCountdown] = useState<number | null>(null);
@@ -102,7 +103,7 @@ export default function PhotoInput({ onImagesChange }: PhotoInputProps) {
   return (
     <div className="flex flex-col gap-4 p-4 bg-white">
       <div className="flex border border-[#E5E5E5] rounded-xl overflow-hidden">
-        {(['upload', 'webcam'] as const).map(m => (
+        {(['webcam', 'upload'] as const).map(m => (
           <button
             key={m}
             type="button"
@@ -111,7 +112,7 @@ export default function PhotoInput({ onImagesChange }: PhotoInputProps) {
               mode === m ? 'bg-[#1A1A1A] text-white' : 'bg-white text-[#1A1A1A]'
             }`}
           >
-            {m === 'upload' ? '파일 업로드' : '웹캠 촬영'}
+            {m === 'upload' ? '불러오기' : '지금 찍기'}
           </button>
         ))}
       </div>
