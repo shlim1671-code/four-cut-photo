@@ -4,6 +4,7 @@ import CanvasPreview from './components/CanvasPreview';
 import FramePicker from './components/FramePicker';
 import SlotEditor from './components/SlotEditor';
 import AdjustPanel from './components/AdjustPanel';
+import ExportButton from './components/ExportButton';
 import { frames } from './frames/definitions';
 import type { FrameDefinition, SlotAdjust } from './frames/types';
 import { DEFAULT_ADJUST } from './frames/types';
@@ -111,6 +112,16 @@ function App() {
         <div className="border-t border-[#E5E5E5]">
           <p className="px-4 pt-4 text-[13px] text-[#8A8A8A]">프레임 선택</p>
           <FramePicker selectedId={frame.id} onSelect={handleFrameChange} />
+        </div>
+
+        <div className="border-t border-[#E5E5E5] p-4">
+          <ExportButton
+            frame={frame}
+            images={images}
+            slotAdjusts={slotAdjusts}
+            adjustments={adjustments}
+            tone={tone}
+          />
         </div>
       </div>
     </div>
