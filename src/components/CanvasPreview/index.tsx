@@ -20,7 +20,10 @@ interface CanvasPreviewProps {
   onSlotClick?: (index: number) => void;
 }
 
-const PREVIEW_LONGEST_SIDE = 600;
+// 미리보기 픽셀 크기 상한. export(2400)와 분리해 미리보기가 과하게 무거워지지 않게 한다.
+const PREVIEW_MAX_LONGEST_SIDE = 2400;
+// 레이아웃 전(표시 폭 0)일 때 임시 fallback. ResizeObserver가 곧 실제 크기로 재렌더한다.
+const PREVIEW_FALLBACK_LONGEST_SIDE = 600;
 // 보정은 가벼운 다운스케일 이미지에 적용 (SPEC 6). 원본 해상도 적용은 export 시점.
 const PROCESS_MAX_SIDE = 480;
 // 무거운 픽셀 연산은 슬라이더 조작이 멈춘 뒤에만 (debounce).
@@ -57,12 +60,26 @@ export default function CanvasPreview({
     toneRef.current = tone ?? NO_TONE;
   });
 
+  // 미리보기 longest side를 실제 표시 폭 × DPR 기준으로 산출한다.
+  // 작은 canvas를 CSS로 늘려 표시하면(업스케일) 흐려지므로, 픽셀 폭이
+  // 표시 폭 × DPR 이상이 되도록 한다. 세로 스트립처럼 길쭉한 프레임도 마찬가지.
+  const computeLongestSide = useCallback((canvas: HTMLCanvasElement): number => {
+    const cssWidth = canvas.clientWidth;
+    if (!cssWidth) return PREVIEW_FALLBACK_LONGEST_SIDE;
+    const dpr = window.devicePixelRatio || 1;
+    const aspect = frameRef.current.aspectRatio;
+    // canvas 픽셀 폭 = longest × min(aspect, 1) 이므로,
+    // 픽셀 폭이 표시폭×DPR 이상이 되려면 longest = 표시폭×DPR / min(aspect,1).
+    const longest = (cssWidth * dpr) / Math.min(aspect, 1);
+    return Math.min(Math.ceil(longest), PREVIEW_MAX_LONGEST_SIDE);
+  }, []);
+
   const renderComposite = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    composite(canvas, frameRef.current, processedRef.current, PREVIEW_LONGEST_SIDE, adjustsRef.current);
+    composite(canvas, frameRef.current, processedRef.current, computeLongestSide(canvas), adjustsRef.current);
     drawSelection(canvas, frameRef.current, selectedRef.current ?? null);
-  }, []);
+  }, [computeLongestSide]);
 
   const processOne = useCallback((img: HTMLImageElement): ImageSource => {
     const adj = adjustmentsRef.current;
@@ -106,6 +123,15 @@ export default function CanvasPreview({
   useEffect(() => {
     renderComposite();
   }, [adjusts, selectedSlot, frame, renderComposite]);
+
+  // 표시 영역 크기가 바뀌면(반응형 레이아웃/회전) 미리보기 해상도를 다시 맞춘다.
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(() => renderComposite());
+    ro.observe(canvas);
+    return () => ro.disconnect();
+  }, [renderComposite]);
 
   const handleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!onSlotClick) return;
