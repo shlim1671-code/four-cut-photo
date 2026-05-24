@@ -1,5 +1,6 @@
 import type { FrameDefinition } from '../frames/types';
 import type { SlotAdjust } from '../frames/types';
+import { computeSlotCrop } from './slotGeometry';
 
 function drawRoundRect(
   ctx: CanvasRenderingContext2D,
@@ -28,18 +29,7 @@ function drawImage(
 ) {
   const iw = img instanceof HTMLCanvasElement ? img.width : img.naturalWidth;
   const ih = img instanceof HTMLCanvasElement ? img.height : img.naturalHeight;
-  const isSwapped = adj.rotation === 90 || adj.rotation === 270;
-  const fitW = isSwapped ? sh : sw;
-  const fitH = isSwapped ? sw : sh;
-
-  const baseScale = Math.max(fitW / iw, fitH / ih);
-  const srcW = fitW / baseScale / adj.zoom;
-  const srcH = fitH / baseScale / adj.zoom;
-
-  const centerX = (iw - srcW) / 2;
-  const centerY = (ih - srcH) / 2;
-  const srcX = Math.max(0, Math.min(iw - srcW, centerX - adj.panX * srcW));
-  const srcY = Math.max(0, Math.min(ih - srcH, centerY - adj.panY * srcH));
+  const { srcX, srcY, srcW, srcH, fitW, fitH } = computeSlotCrop(iw, ih, sw, sh, adj);
 
   ctx.save();
   ctx.translate(sx + sw / 2, sy + sh / 2);
