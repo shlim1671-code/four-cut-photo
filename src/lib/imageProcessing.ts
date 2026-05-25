@@ -18,6 +18,7 @@ export interface ToneEffects {
   monochrome: boolean; // 필름식 흑백 변환 (색별 명도 차등)
   vignette: number;    // 0..1 비네팅 강도
   fade: number;        // 0..1 들어올린 블랙(바랜 톤)
+  sepia: number;       // 0..1 흑백 변환 후 세피아 틴트 강도 (monochrome일 때만 적용)
 }
 
 export const NEUTRAL_ADJUSTMENTS: Adjustments = {
@@ -32,18 +33,19 @@ export const NEUTRAL_ADJUSTMENTS: Adjustments = {
   smoothing: 0,
 };
 
-export const NO_TONE: ToneEffects = { monochrome: false, vignette: 0, fade: 0 };
+export const NO_TONE: ToneEffects = { monochrome: false, vignette: 0, fade: 0, sepia: 0 };
 
 // 피부 스무딩 최대 강도. 윤곽이 무너지지 않고 "살짝 매끄러운" 수준에 머물도록 보수적으로 둔다.
 export const MAX_SMOOTHING = 20;
 
-// 피부 보정 토글 on일 때의 고정 강도 (자연스러운 수준). 사용자에게 슬라이더를 노출하지 않는다.
-export const SKIN_SMOOTHING_ON = 14;
+// 피부 보정 토글 on일 때의 고정 강도. 슬라이더 최대치의 약 30% (자연스러운 수준).
+// 사용자에게 슬라이더를 노출하지 않는다.
+export const SKIN_SMOOTHING_ON = 6;
 
-// 필름식 흑백 변환 가중치. 표준 luma보다 적색을 살짝 올려 피부가 밝게 나오게 한다.
+// 필름식 흑백 변환 가중치 (R0.4 G0.4 B0.2). 표준 luma보다 적색을 올려 피부가 밝게 나오게 한다.
 const MONO_R = 0.4;
-const MONO_G = 0.45;
-const MONO_B = 0.15;
+const MONO_G = 0.4;
+const MONO_B = 0.2;
 
 export function isNeutral(adj: Adjustments, tone: ToneEffects): boolean {
   return (
@@ -58,7 +60,8 @@ export function isNeutral(adj: Adjustments, tone: ToneEffects): boolean {
     adj.smoothing === 0 &&
     !tone.monochrome &&
     tone.vignette === 0 &&
-    tone.fade === 0
+    tone.fade === 0 &&
+    tone.sepia === 0
   );
 }
 
@@ -75,12 +78,15 @@ function smoothSurface(data: Uint8ClampedArray, w: number, h: number, strength: 
   const amount = norm * 0.7;
   // range(색차) 가중치를 보수적으로: 작은 sigma는 평평한 피부 면만 흐리고
   // 턱선·이목구비처럼 명암 차가 큰 경계는 가중치를 급격히 떨어뜨려 보존한다.
-  const sigmaRange = 5 + norm * 5;
+  // sigma를 더 좁혀 경계 보존을 강화 — 강도를 최대로 올려도 윤곽이 살아있게.
+  const sigmaRange = 4 + norm * 3;
 
   const rangeLUT = new Float32Array(256);
   for (let d = 0; d < 256; d++) {
     rangeLUT[d] = Math.exp(-(d * d) / (2 * sigmaRange * sigmaRange));
   }
+  // 경계로 의심되는 큰 휘도 차(임계 이상)는 가중치를 완전히 0으로 — 엣지 누설 차단.
+  const edgeCutoff = 24;
 
   const lum = new Uint8Array(w * h);
   for (let p = 0, i = 0; p < w * h; p++, i += 4) {
@@ -98,7 +104,9 @@ function smoothSurface(data: Uint8ClampedArray, w: number, h: number, strength: 
         for (let dx = -radius; dx <= radius; dx++) {
           const nx = Math.min(w - 1, Math.max(0, x + dx));
           const np = ny * w + nx;
-          const weight = rangeLUT[Math.abs(center - lum[np])];
+          const diff = Math.abs(center - lum[np]);
+          if (diff >= edgeCutoff) continue; // 경계 너머 픽셀은 섞지 않는다
+          const weight = rangeLUT[diff];
           const ni = np * 4;
           accR += data[ni] * weight;
           accG += data[ni + 1] * weight;
@@ -147,7 +155,14 @@ function applyTone(data: Uint8ClampedArray, adj: Adjustments, tone: ToneEffects)
 
     if (tone.monochrome) {
       const gray = MONO_R * r + MONO_G * g + MONO_B * b;
-      r = gray; g = gray; b = gray;
+      if (tone.sepia > 0) {
+        const s = tone.sepia;
+        r = gray * (1 + 0.2 * s);
+        g = gray * (1 + 0.05 * s);
+        b = gray * (1 - 0.18 * s);
+      } else {
+        r = gray; g = gray; b = gray;
+      }
     } else if (satAmt !== 1) {
       const gray = 0.299 * r + 0.587 * g + 0.114 * b;
       r = gray + (r - gray) * satAmt;
