@@ -24,46 +24,74 @@ export const filterPresets: FilterPreset[] = [
     id: 'booth',
     name: '부스톤',
     adjustments: {
-      brightness: 10,
-      contrast: -6,
+      brightness: 12,
+      contrast: -10,
       saturation: -8,
-      temperature: 14,
-      highlights: -10,
+      temperature: 6,
+      highlights: -12,
+      shadows: 10,
+      sharpen: 5,
+      grain: 0,
     },
-    tone: { monochrome: false, vignette: 0, fade: 0.05 },
+    tone: NO_TONE,
   },
   {
-    // 거친 아날로그 흑백: 색별 명도 차등 + 들어올린 블랙 + 그레인 + 약한 비네팅.
+    // 거친 모던 아날로그 흑백: 채널 가중 흑백 + 들어올린 섀도우 + 굵은 그레인 + 약한 비네팅.
     id: 'film-bw',
     name: '필름 흑백',
     adjustments: {
-      contrast: 12,
+      contrast: 8,
+      highlights: -8,
+      shadows: 14,
       grain: 35,
     },
-    tone: { monochrome: true, vignette: 0.25, fade: 0.18 },
+    // 비네팅 0.14 → 가장자리 약 -10% 밝기.
+    tone: { monochrome: true, vignette: 0.14, fade: 0, sepia: 0 },
   },
   {
     // 따뜻하게 바랜 필름.
     id: 'vintage',
     name: '빈티지 컬러',
     adjustments: {
-      saturation: -22,
-      temperature: 22,
-      contrast: -8,
+      brightness: 4,
+      contrast: -6,
+      saturation: -20,
+      temperature: 10,
+      highlights: -6,
+      shadows: 16,
       grain: 18,
     },
-    tone: { monochrome: false, vignette: 0.12, fade: 0.16 },
+    tone: NO_TONE,
   },
   {
     // 차분한 청록 기운.
     id: 'cool',
     name: '쿨톤',
     adjustments: {
-      temperature: -28,
-      saturation: -6,
-      contrast: 4,
+      brightness: 6,
+      contrast: -4,
+      saturation: -10,
+      temperature: -12,
+      shadows: 8,
+      grain: 0,
     },
     tone: NO_TONE,
+  },
+  {
+    // 따뜻한 1920년대 빈티지: 흑백 변환 후 세피아 틴트. (필름 흑백=거친 모던과 별개 갈래)
+    id: 'classic-sepia',
+    name: '클래식 세피아',
+    adjustments: {
+      brightness: 5,
+      contrast: -22,
+      saturation: -88,
+      temperature: 20,
+      highlights: -15,
+      shadows: 25,
+      sharpen: -10,
+      grain: 12,
+    },
+    tone: { monochrome: true, vignette: 0, fade: 0, sepia: 0.8 },
   },
 ];
 
