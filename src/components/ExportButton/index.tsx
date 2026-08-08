@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { FrameDefinition, SlotAdjust } from '../../frames/types';
 import type { Adjustments, ToneEffects } from '../../lib/imageProcessing';
 import { isNeutral, renderAdjusted } from '../../lib/imageProcessing';
@@ -29,6 +29,13 @@ export default function ExportButton({
   const [exporting, setExporting] = useState(false);
   const [failed, setFailed] = useState(false);
   const [saved, setSaved] = useState(false);
+  const resetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (resetTimerRef.current) clearTimeout(resetTimerRef.current);
+    };
+  }, []);
 
   const handleExport = useCallback(async () => {
     setExporting(true);
@@ -60,7 +67,7 @@ export default function ExportButton({
 
       setSaved(true);
       if (onExported) {
-        setTimeout(onExported, RESET_DELAY_MS);
+        resetTimerRef.current = setTimeout(onExported, RESET_DELAY_MS);
       }
     } catch {
       // 이미지 로드 실패·지연: 저장을 중단하고 다시 시도할 수 있게 둔다.
