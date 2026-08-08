@@ -2,6 +2,8 @@
   "name": "four-cut-photo",
   "private": true,
   "version": "0.0.0",
+  "description": "브라우저에서만 동작하는 4컷 사진 웹앱. 백엔드 없이 촬영·보정·프레임 합성 후 PNG로 저장한다.",
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "dev": "vite",
