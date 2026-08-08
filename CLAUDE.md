@@ -66,6 +66,8 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 - 한 번에 한 기능씩만 구현한다. SPEC.md 섹션 4의 권장 순서를 지킬 것.
 - 4컷 합성은 출력 해상도 상한(긴 변 2400px)을 반드시 적용한다.
 - 모든 이미지 처리는 클라이언트(브라우저)에서만. 서버 전송 금지.
+- 작업(커밋·푸시)이 끝나면 항상 gh pr create로 main 대상 PR을 자동으로
+  만든다. 별도로 "PR 만들지 마"라는 지시가 없는 한 매번 만든다.
 
 ---
 
