@@ -50,6 +50,7 @@ function App() {
   const handleSelectFrame = useCallback((f: FrameDefinition) => {
     setFrame(f);
     setSlotAdjusts(makeDefaultAdjusts(f.slots.length));
+    setSelected([]);
     setStep(2);
   }, []);
 
