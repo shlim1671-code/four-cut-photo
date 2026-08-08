@@ -3,6 +3,7 @@ import type { FrameDefinition, SlotAdjust } from '../../frames/types';
 import type { Adjustments, ToneEffects } from '../../lib/imageProcessing';
 import { isNeutral, renderAdjusted } from '../../lib/imageProcessing';
 import { composite } from '../../lib/compositor';
+import { loadImage } from '../../lib/loadImage';
 
 const MAX_EXPORT_SIDE = 2400;
 
@@ -22,19 +23,17 @@ export default function ExportButton({
   tone,
 }: ExportButtonProps) {
   const [exporting, setExporting] = useState(false);
+  const [failed, setFailed] = useState(false);
 
   const handleExport = useCallback(async () => {
     setExporting(true);
+    setFailed(false);
     try {
       const loaded = await Promise.all(
         frame.slots.map((_, i) => {
           const src = images[i];
           if (!src) return Promise.resolve(null);
-          return new Promise<HTMLImageElement>((resolve) => {
-            const img = new Image();
-            img.onload = () => resolve(img);
-            img.src = src;
-          });
+          return loadImage(src);
         })
       );
 
@@ -53,19 +52,29 @@ export default function ExportButton({
       a.href = url;
       a.download = `fourcut-${date}.png`;
       a.click();
+    } catch {
+      // 이미지 로드 실패·지연: 저장을 중단하고 다시 시도할 수 있게 둔다.
+      setFailed(true);
     } finally {
       setExporting(false);
     }
   }, [frame, images, slotAdjusts, adjustments, tone]);
 
   return (
-    <button
-      onClick={handleExport}
-      disabled={exporting}
-      className="w-full bg-[#1A1A1A] text-white rounded-xl text-base font-medium disabled:opacity-50"
-      style={{ minHeight: 44 }}
-    >
-      {exporting ? '저장 중…' : 'PNG 저장'}
-    </button>
+    <>
+      <button
+        onClick={handleExport}
+        disabled={exporting}
+        className="w-full bg-[#1A1A1A] text-white rounded-xl text-base font-medium disabled:opacity-50"
+        style={{ minHeight: 44 }}
+      >
+        {exporting ? '저장 중…' : 'PNG 저장'}
+      </button>
+      {failed && (
+        <p className="mt-2 text-[13px] text-[#1A1A1A]">
+          사진을 불러오지 못했습니다. 다시 시도해주세요.
+        </p>
+      )}
+    </>
   );
 }
