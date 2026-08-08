@@ -26,8 +26,8 @@ export default function FramePicker({ selectedId, onSelect }: FramePickerProps) 
             onClick={() => (i === idx ? onSelect(frame) : setIdx(i))}
             className="absolute top-0 h-full flex items-center justify-center focus:outline-none"
             style={{
-              width: '80%',
-              left: `calc(${(i - idx) * 80 + 10}%)`,
+              width: '100%',
+              left: `${(i - idx) * 100}%`,
               transition: 'left 0.3s ease-out',
             }}
           >
