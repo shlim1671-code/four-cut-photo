@@ -4,6 +4,7 @@ import type { Adjustments, ToneEffects } from '../../lib/imageProcessing';
 import { isNeutral, renderAdjusted } from '../../lib/imageProcessing';
 import { composite } from '../../lib/compositor';
 import { loadImage } from '../../lib/loadImage';
+import { savePng } from '../../lib/savePng';
 
 const MAX_EXPORT_SIDE = 2400;
 
@@ -59,18 +60,16 @@ export default function ExportButton({
       composite(canvas, frame, processed, MAX_EXPORT_SIDE, slotAdjusts);
 
       const date = new Date().toISOString().slice(0, 10);
-      const url = canvas.toDataURL('image/png');
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `fourcut-${date}.png`;
-      a.click();
+      // 공유 시트를 취소하면 저장된 게 아니므로 자동 리셋도 걸지 않는다.
+      if (!(await savePng(canvas, `fourcut-${date}.png`))) return;
 
       setSaved(true);
       if (onExported) {
         resetTimerRef.current = setTimeout(onExported, RESET_DELAY_MS);
       }
     } catch {
-      // 이미지 로드 실패·지연: 저장을 중단하고 다시 시도할 수 있게 둔다.
+      // 이미지 로드 실패·지연, PNG 인코딩·공유 실패: 저장을 중단하고 다시
+      // 시도할 수 있게 둔다.
       setFailed(true);
     } finally {
       setExporting(false);
@@ -94,7 +93,7 @@ export default function ExportButton({
       )}
       {failed && (
         <p className="mt-2 text-[13px] text-[#1A1A1A]">
-          사진을 불러오지 못했습니다. 다시 시도해주세요.
+          저장하지 못했습니다. 다시 시도해주세요.
         </p>
       )}
     </>

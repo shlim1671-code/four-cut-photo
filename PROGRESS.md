@@ -52,7 +52,8 @@ repo를 직접 클론해 빌드·테스트·의존성 감사 실행. 발견 사�
 - 이미지 로드 실패 시(onerror 미처리) ExportButton이 무한 "저장 중…"
   상태에 빠짐.
 - iOS Safari는 <a download>를 무시해서 모바일 저장이 실패할 가능성 높음
-  (주 사용 환경이 폰인데 치명적).
+  (주 사용 환경이 폰인데 치명적). → 해결(섹션 4의 3번): toBlob + Web Share
+  파일 공유로 전환, 데스크톱은 objectURL 다운로드 유지.
 
 **설계 공백**
 - 행사 다중 사용자 시나리오 미고려: 저장 후 자동 초기화 없음, "처음으로"
@@ -79,7 +80,9 @@ definitions.ts와도 v2가 일치함 — 문서 상충 우려는 기우였음.
 0-C. package.json test 스크립트 + deploy.yml에 테스트 연결 (Sonnet)
 1.   이미지 로드 실패 처리 — onerror/timeout (Opus)
 2.   행사 운영 UX — 자동 초기화, 확인 다이얼로그, 프라이버시 문구 (Sonnet)
-3.   모바일 저장 — toBlob + Web Share API 폴백 (Opus)
+3.   모바일 저장 — toBlob + Web Share API 폴백 (Opus) — 완료
+     (src/lib/savePng.ts, test/savePng.test.mjs. 분기 조건:
+      canShare({files}) && pointer:coarse → 공유 시트, 그 외 → 다운로드)
 4.   오픈소스 공개 준비 — README/LICENSE/package.json 메타 (Sonnet)
 5+.  dark-event 텍스트 침범 수정, 해상도 정책 재검토, 캐러셀 폭 100%,
      white-plain 경계 표시, editorContext.tsx 死코드 정리, 비주얼 마감
