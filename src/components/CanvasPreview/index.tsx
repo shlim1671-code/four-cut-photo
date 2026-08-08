@@ -9,6 +9,7 @@ import {
   renderAdjusted,
 } from '../../lib/imageProcessing';
 import { composite } from '../../lib/compositor';
+import { loadImage } from '../../lib/loadImage';
 
 interface CanvasPreviewProps {
   frame: FrameDefinition;
@@ -101,14 +102,15 @@ export default function CanvasPreview({
 
     let cancelled = false;
     images.slice(0, slotCount).forEach((src, i) => {
-      const img = new Image();
-      img.onload = () => {
-        if (cancelled) return;
-        loadedRef.current[i] = img;
-        processedRef.current[i] = processOne(img);
-        renderComposite();
-      };
-      img.src = src;
+      loadImage(src)
+        .then((img) => {
+          if (cancelled) return;
+          loadedRef.current[i] = img;
+          processedRef.current[i] = processOne(img);
+          renderComposite();
+        })
+        // 실패한 칸은 빈 슬롯(회색)으로 두고 나머지 칸 렌더링은 계속한다.
+        .catch(() => {});
     });
     return () => { cancelled = true; };
   }, [images, processOne, renderComposite]);

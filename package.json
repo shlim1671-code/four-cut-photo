@@ -8,7 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "node --import ./test/ts-resolve-hook.mjs test/presets.test.mjs && node --import ./test/ts-resolve-hook.mjs test/slotGeometry.test.mjs && node --import ./test/ts-resolve-hook.mjs test/smoothing.test.mjs"
+    "test": "node --import ./test/ts-resolve-hook.mjs test/presets.test.mjs && node --import ./test/ts-resolve-hook.mjs test/slotGeometry.test.mjs && node --import ./test/ts-resolve-hook.mjs test/smoothing.test.mjs && node --import ./test/ts-resolve-hook.mjs test/loadImage.test.mjs"
   },
   "dependencies": {
     "react": "^19.2.6",
