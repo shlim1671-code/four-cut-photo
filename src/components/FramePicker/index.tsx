@@ -31,11 +31,12 @@ export default function FramePicker({ selectedId, onSelect }: FramePickerProps) 
               transition: 'left 0.3s ease-out',
             }}
           >
+            {/* 높이를 CAROUSEL_HEIGHT로 채우되, 슬라이드 폭을 넘으면 폭에 맞춰 줄인다.
+                (height:100% + aspect-ratio는 폭이 max-width에 걸려도 높이가 안 줄어
+                가로로 넓은 프레임이 위로 붙고 아래에 빈칸이 남는다) */}
             <div
               style={{
-                height: '100%',
-                aspectRatio: String(frame.aspectRatio),
-                maxWidth: '100%',
+                width: `min(100%, ${CAROUSEL_HEIGHT * frame.aspectRatio}px)`,
               }}
             >
               <CanvasPreview frame={frame} images={[]} />
