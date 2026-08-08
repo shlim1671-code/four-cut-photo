@@ -5,6 +5,7 @@ on:
     branches: [main]
 
 permissions:
+  contents: read
   pages: write
   id-token: write
 
@@ -22,7 +23,9 @@ jobs:
           node-version: 20
           cache: npm
 
-      - run: npm install
+      - run: npm ci
+
+      - run: npm test
 
       - run: npm run build
 
