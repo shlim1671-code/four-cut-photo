@@ -8,7 +8,7 @@ import {
   isNeutral,
   renderAdjusted,
 } from '../../lib/imageProcessing';
-import { composite } from '../../lib/compositor';
+import { applySlotTilt, composite, loadFrameBackground } from '../../lib/compositor';
 import { loadImage } from '../../lib/loadImage';
 
 interface CanvasPreviewProps {
@@ -44,6 +44,7 @@ export default function CanvasPreview({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const loadedRef = useRef<(HTMLImageElement | null)[]>([]);
   const processedRef = useRef<(ImageSource | null)[]>([]);
+  const backgroundRef = useRef<HTMLImageElement | null>(null);
 
   // 비동기 콜백·debounce에서 최신 값을 읽기 위한 ref 미러.
   const frameRef = useRef(frame);
@@ -78,9 +79,30 @@ export default function CanvasPreview({
   const renderComposite = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    composite(canvas, frameRef.current, processedRef.current, computeLongestSide(canvas), adjustsRef.current);
+    composite(
+      canvas,
+      frameRef.current,
+      processedRef.current,
+      computeLongestSide(canvas),
+      adjustsRef.current,
+      backgroundRef.current
+    );
     drawSelection(canvas, frameRef.current, selectedRef.current ?? null);
   }, [computeLongestSide]);
+
+  // 프레임 배경 이미지 로드. 프레임이 바뀌면 즉시 비워 이전 배경이 남지 않게 하고,
+  // 로드가 끝나면 다시 그린다. 실패하면 null로 남아 background 단색으로 폴백된다.
+  // (아래 렌더 effect들보다 먼저 선언해 같은 커밋에서 ref가 먼저 초기화되게 한다.)
+  useEffect(() => {
+    backgroundRef.current = null;
+    let cancelled = false;
+    loadFrameBackground(frame.backgroundImage).then((img) => {
+      if (cancelled || !img) return;
+      backgroundRef.current = img;
+      renderComposite();
+    });
+    return () => { cancelled = true; };
+  }, [frame.backgroundImage, renderComposite]);
 
   const processOne = useCallback((img: HTMLImageElement): ImageSource => {
     const adj = adjustmentsRef.current;
@@ -177,7 +199,11 @@ function drawSelection(
   const sw = s.w * canvas.width;
   const sh = s.h * canvas.height;
   const lw = Math.max(2, canvas.width / 120);
+  ctx.save();
+  // 기울어진 칸은 선택 테두리도 같이 기울어야 실제 칸 위치와 맞는다.
+  applySlotTilt(ctx, s.tilt, sx + sw / 2, sy + sh / 2);
   ctx.strokeStyle = '#1A1A1A';
   ctx.lineWidth = lw;
   ctx.strokeRect(sx + lw / 2, sy + lw / 2, sw - lw, sh - lw);
+  ctx.restore();
 }
