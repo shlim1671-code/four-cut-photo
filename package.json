@@ -5,6 +5,9 @@
   "description": "브라우저에서만 동작하는 4컷 사진 웹앱. 백엔드 없이 촬영·보정·프레임 합성 후 PNG로 저장한다.",
   "license": "MIT",
   "type": "module",
+  "engines": {
+    "node": ">=22.15.0"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
