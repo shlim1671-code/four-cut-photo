@@ -64,6 +64,13 @@ function App() {
     setSmoothingOn(false);
   }, []);
 
+  const handleResetClick = useCallback(() => {
+    if (pool.length > 0 && !window.confirm('지금까지 찍은 사진이 사라집니다. 처음으로 갈까요?')) {
+      return;
+    }
+    handleReset();
+  }, [pool.length, handleReset]);
+
   const handleSlotClick = useCallback((index: number) => {
     setSelectedSlot((prev) => (prev === index ? null : index));
   }, []);
@@ -96,7 +103,7 @@ function App() {
             </span>
             <button
               type="button"
-              onClick={handleReset}
+              onClick={handleResetClick}
               className="min-h-[44px] px-3 text-[13px] text-[#8A8A8A]"
             >
               처음으로
@@ -109,6 +116,9 @@ function App() {
           <div>
             <p className="px-4 pt-4 text-[13px] text-[#8A8A8A]">프레임을 고르세요</p>
             <FramePicker selectedId={frame.id} onSelect={handleSelectFrame} />
+            <p className="px-4 pb-4 text-[13px] text-[#8A8A8A] text-center">
+              사진은 이 기기에서만 처리되며 서버로 전송되지 않습니다
+            </p>
           </div>
         )}
 
@@ -179,6 +189,7 @@ function App() {
                 slotAdjusts={slotAdjusts}
                 adjustments={adjustments}
                 tone={tone}
+                onExported={handleReset}
               />
             </div>
           </>
