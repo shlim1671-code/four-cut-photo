@@ -39,7 +39,7 @@ export default function PhotoSelect({ pool, selected, count, onChange }: PhotoSe
               isSel ? 'border-[#1A1A1A]' : 'border-[#E5E5E5]',
             ].join(' ')}
           >
-            <img src={photo.url} alt={`사진 ${i + 1}`} className="w-full h-full object-cover" />
+            <img src={photo.thumbUrl} alt={`사진 ${i + 1}`} className="w-full h-full object-cover" />
             {isSel && (
               <span className="absolute top-1 right-1 w-7 h-7 flex items-center justify-center rounded-full bg-[#1A1A1A] text-white text-[13px] font-medium tabular-nums">
                 {order + 1}

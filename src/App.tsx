@@ -32,6 +32,8 @@ function App() {
 
   // 해제 시점(리셋·언마운트)에 최신 목록을 읽기 위한 ref 미러.
   const poolRef = useRef<Photo[]>([]);
+  // 리셋할 때마다 증가. 진행 중이던 사진 처리가 새 세션에 끼어들지 않게 한다.
+  const sessionRef = useRef(0);
 
   const slotCount = frame.slots.length;
 
@@ -59,9 +61,22 @@ function App() {
     setStep(2);
   }, []);
 
-  const handleAddPhotos = useCallback((blobs: Blob[]) => {
-    poolRef.current = [...poolRef.current, ...blobs.map(createPhoto)];
-    setPool(poolRef.current);
+  const handleAddPhotos = useCallback(async (blobs: Blob[]) => {
+    const session = sessionRef.current;
+    // 한 장씩 순차 처리한다. 24장을 동시에 처리하면 축소하는 동안 원본
+    // 비트맵이 한꺼번에 디코딩돼 정점이 오히려 높아진다.
+    for (const blob of blobs) {
+      // 썸네일을 못 만드는 사진(손상·미지원 형식)은 건너뛰고 나머지를 계속 받는다.
+      const photo = await createPhoto(blob).catch(() => null);
+      if (!photo) continue;
+      // 처리 중 리셋됐다면 지난 세션 사진이다 — 새 세션에 섞이지 않게 버린다.
+      if (session !== sessionRef.current) {
+        revokePhotos([photo]);
+        return;
+      }
+      poolRef.current = [...poolRef.current, photo];
+      setPool(poolRef.current);
+    }
   }, []);
 
   // 세션이 끝나면 object URL을 명시적으로 해제한다. 해제하지 않으면 Blob이
@@ -69,6 +84,7 @@ function App() {
   const handleReset = useCallback(() => {
     revokePhotos(poolRef.current);
     poolRef.current = [];
+    sessionRef.current += 1;
     setStep(1);
     setFrame(frames[0]);
     setPool([]);

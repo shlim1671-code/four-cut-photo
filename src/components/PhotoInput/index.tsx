@@ -178,7 +178,7 @@ export default function PhotoInput({ photos, onAddPhotos }: PhotoInputProps) {
           <div className="grid grid-cols-4 gap-2">
             {photos.map((photo, i) => (
               <div key={photo.id} className="aspect-square rounded-xl overflow-hidden bg-[#F5F5F5]">
-                <img src={photo.url} alt={`사진 ${i + 1}`} className="w-full h-full object-cover" />
+                <img src={photo.thumbUrl} alt={`사진 ${i + 1}`} className="w-full h-full object-cover" />
               </div>
             ))}
           </div>

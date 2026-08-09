@@ -36,6 +36,10 @@ AdjustPanel(보정+피부스무딩) / ExportButton(2400px 상한 PNG)
   App의 pool이 단일 출처, 나머지는 URL만 참조. 세션 리셋·언마운트 시
   revokeObjectURL로 명시 해제. 24장 업로드 실측: 세션 종료 후 잔존
   메모리 210MB → 96MB (−54%), 사용 중 최대 702MB → 588MB (−16%)
+- 단계2·단계3 그리드를 원본 대신 320px 썸네일로 렌더 (createImageBitmap +
+  close()로 축소, JPEG 0.7). 24장 모으는 동안 +590MB → +26MB (−96%).
+  이제 정점은 단계4에서 고른 4장을 합성할 때(+269MB)로, 모은 장수와
+  무관해졌다 — 연속 촬영 장수가 늘어도 메모리가 따라 늘지 않는다.
 
 ### 문서 정리
 - frame-coordinates-v2.md → frame-coordinates.md로 개명 (현재 유일한 좌표 문서)
@@ -93,11 +97,12 @@ definitions.ts와도 v2가 일치함 — 문서 상충 우려는 기우였음.
 4.   오픈소스 공개 준비 — README/LICENSE/package.json 메타 (Sonnet)
 6.   사진 보관 중복 제거 — Blob + object URL, 단일 출처, 명시적 해제 (Opus) — 완료
      (src/lib/photoStore.ts, test/photoStore.test.mjs)
-7.   **썸네일 다운스케일** — 남은 메모리의 대부분이 여기다. 단계2·단계3
-     그리드가 원본 해상도 <img>를 그대로 써서, 12MP 사진 1장당 디코딩
-     비트맵이 약 48MB. 24장이면 사용 중 약 590MB. 업로드 시 긴 변
-     ~320px 썸네일 Blob을 따로 만들어 그리드는 그것만 보게 하면
-     대부분 회수된다. (원본은 단계4 합성·export용으로만 유지)
+7.   썸네일 다운스케일 — 단계2·단계3 그리드용 320px 썸네일 (Opus) — 완료
+     (src/lib/photoStore.ts). 24장 실측: 사진 모으는 동안 +590MB → +26MB.
+     **핵심은 축소 자체가 아니라 디코딩 경로다.** <img>로 원본을 읽어
+     축소하면 원본 비트맵이 브라우저 이미지 캐시에 URL 단위로 남아
+     오히려 +630MB로 늘었다. createImageBitmap + close()로 바꿔야
+     디코딩이 그 자리에서 반납된다 — 나중에 비슷한 작업을 할 때 주의.
 8+.  dark-event 텍스트 침범 수정, 해상도 정책 재검토, 캐러셀 폭 100%,
      white-plain 경계 표시, editorContext.tsx 死코드 정리, 비주얼 마감
 
