@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import PhotoInput from './components/PhotoInput';
 import PhotoSelect from './components/PhotoSelect';
 import CanvasPreview from './components/CanvasPreview';
@@ -11,6 +11,7 @@ import type { FrameDefinition, SlotAdjust } from './frames/types';
 import { DEFAULT_ADJUST } from './frames/types';
 import { NEUTRAL_ADJUSTMENTS, NO_TONE, SKIN_SMOOTHING_ON } from './lib/imageProcessing';
 import { getPreset } from './lib/filters';
+import { createPhoto, revokePhotos, type Photo } from './lib/photoStore';
 
 const TOTAL_STEPS = 4;
 
@@ -21,16 +22,20 @@ function makeDefaultAdjusts(count: number): SlotAdjust[] {
 function App() {
   const [step, setStep] = useState(1);
   const [frame, setFrame] = useState<FrameDefinition>(frames[0]);
-  const [pool, setPool] = useState<string[]>([]);
+  // 사진의 단일 출처. 다른 곳은 전부 이 목록의 object URL만 참조한다.
+  const [pool, setPool] = useState<Photo[]>([]);
   const [selected, setSelected] = useState<number[]>([]);
   const [slotAdjusts, setSlotAdjusts] = useState<SlotAdjust[]>(() => makeDefaultAdjusts(frames[0].slots.length));
   const [selectedSlot, setSelectedSlot] = useState<number | null>(null);
   const [filterId, setFilterId] = useState('original');
   const [smoothingOn, setSmoothingOn] = useState(false);
 
+  // 해제 시점(리셋·언마운트)에 최신 목록을 읽기 위한 ref 미러.
+  const poolRef = useRef<Photo[]>([]);
+
   const slotCount = frame.slots.length;
 
-  const images = useMemo(() => selected.map((i) => pool[i]), [selected, pool]);
+  const images = useMemo(() => selected.map((i) => pool[i].url), [selected, pool]);
 
   const tone = useMemo(() => getPreset(filterId)?.tone ?? NO_TONE, [filterId]);
   const adjustments = useMemo(
@@ -54,7 +59,16 @@ function App() {
     setStep(2);
   }, []);
 
+  const handleAddPhotos = useCallback((blobs: Blob[]) => {
+    poolRef.current = [...poolRef.current, ...blobs.map(createPhoto)];
+    setPool(poolRef.current);
+  }, []);
+
+  // 세션이 끝나면 object URL을 명시적으로 해제한다. 해제하지 않으면 Blob이
+  // 탭이 닫힐 때까지 살아남아, 행사장에서 사람이 바뀔수록 메모리가 쌓인다.
   const handleReset = useCallback(() => {
+    revokePhotos(poolRef.current);
+    poolRef.current = [];
     setStep(1);
     setFrame(frames[0]);
     setPool([]);
@@ -71,6 +85,8 @@ function App() {
     }
     handleReset();
   }, [pool.length, handleReset]);
+
+  useEffect(() => () => revokePhotos(poolRef.current), []);
 
   const handleSlotClick = useCallback((index: number) => {
     setSelectedSlot((prev) => (prev === index ? null : index));
@@ -129,7 +145,7 @@ function App() {
             <p className="px-4 pt-4 text-[13px] text-[#8A8A8A]">
               사진을 모으세요 (최소 {slotCount}장)
             </p>
-            <PhotoInput initialImages={pool} onImagesChange={setPool} />
+            <PhotoInput photos={pool} onAddPhotos={handleAddPhotos} />
           </div>
         )}
 

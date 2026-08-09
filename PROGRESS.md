@@ -32,6 +32,10 @@ AdjustPanel(보정+피부스무딩) / ExportButton(2400px 상한 PNG)
 - 프레임 선택 UI → 캐러셀
 - 미리보기 흐림 수정 (표시 크기·DPR 기준 렌더)
 - 필터 프리셋 6종 정량값 적용 + 피부 스무딩 경계 보존 강화
+- 사진 보관을 base64 data URL → Blob + object URL로 전환 (src/lib/photoStore.ts).
+  App의 pool이 단일 출처, 나머지는 URL만 참조. 세션 리셋·언마운트 시
+  revokeObjectURL로 명시 해제. 24장 업로드 실측: 세션 종료 후 잔존
+  메모리 210MB → 96MB (−54%), 사용 중 최대 702MB → 588MB (−16%)
 
 ### 문서 정리
 - frame-coordinates-v2.md → frame-coordinates.md로 개명 (현재 유일한 좌표 문서)
@@ -59,6 +63,9 @@ repo를 직접 클론해 빌드·테스트·의존성 감사 실행. 발견 사�
 - 행사 다중 사용자 시나리오 미고려: 저장 후 자동 초기화 없음, "처음으로"
   버튼에 확인 없음, 프라이버시 안내 문구 없음.
 - 사진을 base64 문자열로 다중 보관 → 태블릿에서 다량 촬영 시 메모리 우려.
+  → 해결(섹션 4의 6번): Blob + object URL 전환. 다만 실측 결과 메모리의
+  주된 소비처는 base64 문자열이 아니라 **원본 해상도 썸네일의 디코딩
+  비트맵**이었다 (섹션 4의 7번으로 이어짐).
 
 **오픈소스 공개 준비 0%**
 - README가 Vite 기본 템플릿 그대로, LICENSE 없음, package.json 메타 비어있음.
@@ -84,7 +91,14 @@ definitions.ts와도 v2가 일치함 — 문서 상충 우려는 기우였음.
      (src/lib/savePng.ts, test/savePng.test.mjs. 분기 조건:
       canShare({files}) && pointer:coarse → 공유 시트, 그 외 → 다운로드)
 4.   오픈소스 공개 준비 — README/LICENSE/package.json 메타 (Sonnet)
-5+.  dark-event 텍스트 침범 수정, 해상도 정책 재검토, 캐러셀 폭 100%,
+6.   사진 보관 중복 제거 — Blob + object URL, 단일 출처, 명시적 해제 (Opus) — 완료
+     (src/lib/photoStore.ts, test/photoStore.test.mjs)
+7.   **썸네일 다운스케일** — 남은 메모리의 대부분이 여기다. 단계2·단계3
+     그리드가 원본 해상도 <img>를 그대로 써서, 12MP 사진 1장당 디코딩
+     비트맵이 약 48MB. 24장이면 사용 중 약 590MB. 업로드 시 긴 변
+     ~320px 썸네일 Blob을 따로 만들어 그리드는 그것만 보게 하면
+     대부분 회수된다. (원본은 단계4 합성·export용으로만 유지)
+8+.  dark-event 텍스트 침범 수정, 해상도 정책 재검토, 캐러셀 폭 100%,
      white-plain 경계 표시, editorContext.tsx 死코드 정리, 비주얼 마감
 
 각 PR 지시문은 Claude(claude.ai) 세션에서 작성해 여기에 붙여넣는 방식으로
