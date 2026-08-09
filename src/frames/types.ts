@@ -3,6 +3,10 @@ export interface FrameSlot {
   y: number;
   w: number;
   h: number;
+  // 칸 자체를 중심 기준으로 기울인다(degrees). 폴라로이드처럼 비스듬한 배치용.
+  // SlotAdjust.rotation(사용자가 사진을 90도씩 돌리는 값)과는 다른 개념이다.
+  // 없으면 0.
+  tilt?: number;
 }
 
 export interface FrameDecoration {
@@ -21,6 +25,9 @@ export interface FrameDefinition {
   name: string;
   aspectRatio: number;
   background: string;
+  // 배경 이미지 경로. 있으면 background(단색) 위에 프레임 전체 영역으로 그린다.
+  // 로드에 실패하면 background 단색만 남는다.
+  backgroundImage?: string;
   borderRadius?: number;
   slots: FrameSlot[];
   decorations?: FrameDecoration[];

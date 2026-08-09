@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { FrameDefinition, SlotAdjust } from '../../frames/types';
 import type { Adjustments, ToneEffects } from '../../lib/imageProcessing';
 import { isNeutral, renderAdjusted } from '../../lib/imageProcessing';
-import { composite } from '../../lib/compositor';
+import { composite, loadFrameBackground } from '../../lib/compositor';
 import { loadImage } from '../../lib/loadImage';
 import { savePng } from '../../lib/savePng';
 
@@ -42,13 +42,18 @@ export default function ExportButton({
     setExporting(true);
     setFailed(false);
     try {
-      const loaded = await Promise.all(
-        frame.slots.map((_, i) => {
-          const src = images[i];
-          if (!src) return Promise.resolve(null);
-          return loadImage(src);
-        })
-      );
+      // 배경 이미지는 미리보기와 같은 헬퍼로 로드한다(실패 시 null → 단색 폴백).
+      // 칸 사진과 달리 실패해도 저장을 막지 않는다.
+      const [loaded, background] = await Promise.all([
+        Promise.all(
+          frame.slots.map((_, i) => {
+            const src = images[i];
+            if (!src) return Promise.resolve(null);
+            return loadImage(src);
+          })
+        ),
+        loadFrameBackground(frame.backgroundImage),
+      ]);
 
       const processed = loaded.map((img) =>
         img && !isNeutral(adjustments, tone)
@@ -57,7 +62,7 @@ export default function ExportButton({
       );
 
       const canvas = document.createElement('canvas');
-      composite(canvas, frame, processed, MAX_EXPORT_SIDE, slotAdjusts);
+      composite(canvas, frame, processed, MAX_EXPORT_SIDE, slotAdjusts, background);
 
       const date = new Date().toISOString().slice(0, 10);
       // 공유 시트를 취소하면 저장된 게 아니므로 자동 리셋도 걸지 않는다.
