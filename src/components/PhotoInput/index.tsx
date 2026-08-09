@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
+import type { Photo } from '../../lib/photoStore';
 
 interface PhotoInputProps {
-  onImagesChange: (images: string[]) => void;
-  initialImages?: string[];
+  photos: Photo[];
+  onAddPhotos: (blobs: Blob[]) => void;
 }
 
-export default function PhotoInput({ onImagesChange, initialImages = [] }: PhotoInputProps) {
+export default function PhotoInput({ photos, onAddPhotos }: PhotoInputProps) {
   const [mode, setMode] = useState<'upload' | 'webcam'>('webcam');
-  const [images, setImages] = useState<string[]>(initialImages);
   const [isDragging, setIsDragging] = useState(false);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [countdown, setCountdown] = useState<number | null>(null);
@@ -16,10 +16,6 @@ export default function PhotoInput({ onImagesChange, initialImages = [] }: Photo
   const videoRef = useRef<HTMLVideoElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
-
-  useEffect(() => {
-    onImagesChange(images);
-  }, [images, onImagesChange]);
 
   useEffect(() => {
     if (stream && videoRef.current) {
@@ -45,18 +41,10 @@ export default function PhotoInput({ onImagesChange, initialImages = [] }: Photo
     setMode(newMode);
   };
 
+  // File은 그 자체가 Blob이므로 읽어서 문자열로 만들 필요가 없다 — 그대로 넘긴다.
   const readFiles = (files: File[]) => {
     const imageFiles = files.filter(f => f.type.startsWith('image/'));
-    Promise.all(
-      imageFiles.map(
-        f =>
-          new Promise<string>(resolve => {
-            const reader = new FileReader();
-            reader.onload = e => resolve(e.target!.result as string);
-            reader.readAsDataURL(f);
-          })
-      )
-    ).then(newImages => setImages(prev => [...prev, ...newImages]));
+    if (imageFiles.length > 0) onAddPhotos(imageFiles);
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -82,7 +70,8 @@ export default function PhotoInput({ onImagesChange, initialImages = [] }: Photo
     canvas.width = videoRef.current.videoWidth;
     canvas.height = videoRef.current.videoHeight;
     canvas.getContext('2d')!.drawImage(videoRef.current, 0, 0);
-    setImages(prev => [...prev, canvas.toDataURL('image/jpeg')]);
+    // toDataURL 대신 toBlob — base64 문자열을 만들지 않는다.
+    canvas.toBlob(blob => { if (blob) onAddPhotos([blob]); }, 'image/jpeg');
   };
 
   const startCountdown = () => {
@@ -183,13 +172,13 @@ export default function PhotoInput({ onImagesChange, initialImages = [] }: Photo
         </div>
       )}
 
-      {images.length > 0 && (
+      {photos.length > 0 && (
         <div className="flex flex-col gap-2">
-          <p className="text-[#8A8A8A] text-sm">{images.length}장 선택됨</p>
+          <p className="text-[#8A8A8A] text-sm">{photos.length}장 선택됨</p>
           <div className="grid grid-cols-4 gap-2">
-            {images.map((src, i) => (
-              <div key={i} className="aspect-square rounded-xl overflow-hidden bg-[#F5F5F5]">
-                <img src={src} alt={`사진 ${i + 1}`} className="w-full h-full object-cover" />
+            {photos.map((photo, i) => (
+              <div key={photo.id} className="aspect-square rounded-xl overflow-hidden bg-[#F5F5F5]">
+                <img src={photo.url} alt={`사진 ${i + 1}`} className="w-full h-full object-cover" />
               </div>
             ))}
           </div>
