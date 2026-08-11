@@ -20,6 +20,16 @@ export interface FrameDecoration {
   align?: 'left' | 'center' | 'right';
 }
 
+export interface FrameDateStamp {
+  x: number;
+  y: number;
+  fontFamily: string;
+  fontSize: number; // 프레임 폭 대비 비율
+  color: string;
+  // 토큰: YYYY YY MM DD HH mm ss (예: 'YYYY.MM.DD')
+  format: string;
+}
+
 export interface FrameDefinition {
   id: string;
   name: string;
@@ -28,6 +38,11 @@ export interface FrameDefinition {
   // 배경 이미지 경로. 있으면 background(단색) 위에 프레임 전체 영역으로 그린다.
   // 로드에 실패하면 background 단색만 남는다.
   backgroundImage?: string;
+  // 전경 이미지 경로(투명 PNG 전제). 칸 사진 위에 프레임 전체 영역으로 덮어
+  // 그린다. backgroundImage와 같은 스케일/좌표계를 쓴다.
+  foregroundImage?: string;
+  // 있으면 전경 이미지 위에 렌더 시각의 날짜를 그린다.
+  dateStamp?: FrameDateStamp;
   borderRadius?: number;
   slots: FrameSlot[];
   decorations?: FrameDecoration[];

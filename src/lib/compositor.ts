@@ -2,6 +2,7 @@ import type { FrameDefinition } from '../frames/types';
 import type { SlotAdjust } from '../frames/types';
 import { computeSlotCrop } from './slotGeometry';
 import { loadImage } from './loadImage';
+import { formatDateStamp } from './dateStamp';
 
 function drawRoundRect(
   ctx: CanvasRenderingContext2D,
@@ -60,12 +61,12 @@ function drawImage(
 const DEFAULT_ADJ: SlotAdjust = { panX: 0, panY: 0, zoom: 1, flipH: false, rotation: 0 };
 
 /**
- * 프레임 배경 이미지를 미리 로드한다. composite가 동기 함수이므로 로드는
+ * 프레임 배경·전경 이미지를 미리 로드한다. composite가 동기 함수이므로 로드는
  * 호출부에서 끝내고 결과만 넘긴다 — 미리보기와 export가 같은 경로를 쓴다.
- * 배경은 장식 요소라 실패해도 핵심 기능이 아니므로 null을 돌려주고 조용히
- * 단색 background로 폴백한다(에러를 사용자에게 노출하지 않는다).
+ * 장식 요소라 실패해도 핵심 기능이 아니므로 null을 돌려주고 조용히
+ * 폴백한다(에러를 사용자에게 노출하지 않는다).
  */
-export function loadFrameBackground(
+export function loadFrameImage(
   src: string | undefined
 ): Promise<HTMLImageElement | null> {
   if (!src) return Promise.resolve(null);
@@ -78,7 +79,8 @@ export function composite(
   images: (ImageSource | null)[],
   longestSidePx: number,
   adjusts?: (SlotAdjust | null)[],
-  backgroundImage?: ImageSource | null
+  backgroundImage?: ImageSource | null,
+  foregroundImage?: ImageSource | null
 ): void {
   const { aspectRatio } = frame;
   const canvasW = aspectRatio >= 1
@@ -134,6 +136,24 @@ export function composite(
 
     ctx.restore();
   });
+
+  // 전경 이미지는 칸 사진 위에 배경과 같은 좌표계로 덮어 그린다(투명 PNG 전제).
+  if (foregroundImage) {
+    ctx.drawImage(foregroundImage, 0, 0, canvasW, canvasH);
+  }
+
+  const stamp = frame.dateStamp;
+  if (stamp) {
+    ctx.font = `${Math.round(stamp.fontSize * canvasW)}px ${stamp.fontFamily}`;
+    ctx.fillStyle = stamp.color;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(
+      formatDateStamp(stamp.format, new Date()),
+      stamp.x * canvasW,
+      stamp.y * canvasH
+    );
+  }
 
   for (const dec of frame.decorations ?? []) {
     if (dec.type !== 'text') continue;

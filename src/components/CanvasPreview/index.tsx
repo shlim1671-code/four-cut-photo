@@ -8,7 +8,8 @@ import {
   isNeutral,
   renderAdjusted,
 } from '../../lib/imageProcessing';
-import { applySlotTilt, composite, loadFrameBackground } from '../../lib/compositor';
+import { applySlotTilt, composite, loadFrameImage } from '../../lib/compositor';
+import { waitForStampFont } from '../../lib/dateStamp';
 import { loadImage } from '../../lib/loadImage';
 
 interface CanvasPreviewProps {
@@ -45,6 +46,7 @@ export default function CanvasPreview({
   const loadedRef = useRef<(HTMLImageElement | null)[]>([]);
   const processedRef = useRef<(ImageSource | null)[]>([]);
   const backgroundRef = useRef<HTMLImageElement | null>(null);
+  const foregroundRef = useRef<HTMLImageElement | null>(null);
 
   // 비동기 콜백·debounce에서 최신 값을 읽기 위한 ref 미러.
   const frameRef = useRef(frame);
@@ -85,24 +87,41 @@ export default function CanvasPreview({
       processedRef.current,
       computeLongestSide(canvas),
       adjustsRef.current,
-      backgroundRef.current
+      backgroundRef.current,
+      foregroundRef.current
     );
     drawSelection(canvas, frameRef.current, selectedRef.current ?? null);
   }, [computeLongestSide]);
 
-  // 프레임 배경 이미지 로드. 프레임이 바뀌면 즉시 비워 이전 배경이 남지 않게 하고,
-  // 로드가 끝나면 다시 그린다. 실패하면 null로 남아 background 단색으로 폴백된다.
+  // 프레임 배경·전경 이미지 로드. 프레임이 바뀌면 즉시 비워 이전 이미지가 남지
+  // 않게 하고, 로드가 끝나면 다시 그린다. 실패하면 null로 남아 폴백된다.
   // (아래 렌더 effect들보다 먼저 선언해 같은 커밋에서 ref가 먼저 초기화되게 한다.)
   useEffect(() => {
     backgroundRef.current = null;
+    foregroundRef.current = null;
     let cancelled = false;
-    loadFrameBackground(frame.backgroundImage).then((img) => {
+    loadFrameImage(frame.backgroundImage).then((img) => {
       if (cancelled || !img) return;
       backgroundRef.current = img;
       renderComposite();
     });
+    loadFrameImage(frame.foregroundImage).then((img) => {
+      if (cancelled || !img) return;
+      foregroundRef.current = img;
+      renderComposite();
+    });
     return () => { cancelled = true; };
-  }, [frame.backgroundImage, renderComposite]);
+  }, [frame.backgroundImage, frame.foregroundImage, renderComposite]);
+
+  // 날짜 스탬프 폰트가 준비되면 다시 그린다. 폰트 로드 전에 그리면 폴백 폰트로
+  // 굳어 export 결과와 어긋난다.
+  useEffect(() => {
+    let cancelled = false;
+    waitForStampFont(frame.dateStamp).then(() => {
+      if (!cancelled) renderComposite();
+    });
+    return () => { cancelled = true; };
+  }, [frame.dateStamp, renderComposite]);
 
   const processOne = useCallback((img: HTMLImageElement): ImageSource => {
     const adj = adjustmentsRef.current;
