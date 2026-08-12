@@ -1,6 +1,7 @@
 import type { FrameDefinition } from './types';
 import atelierStoryboardBg from '../assets/atelier-storyboard-bg.png';
 import atelierStoryboardFg from '../assets/atelier-storyboard-fg.png';
+import atomBackground from '../assets/atom-background.png';
 
 // 좌표는 실제 출력물(포토이즘·이터널로그)을 픽셀 단위로 측정해 얻은 값이다.
 export const frames: FrameDefinition[] = [
@@ -31,14 +32,38 @@ export const frames: FrameDefinition[] = [
   {
     id: 'compact-grid',
     name: '2×2 꽉참',
+    // 배경 PNG 1601×2400 기준. 1601/2400 = 0.6671.
     aspectRatio: 0.667,
     background: '#1a1a1a',
+    backgroundImage: atomBackground,
+    // 칸 좌표는 배경 PNG의 패널 테두리(두께 4px)를 픽셀 단위로 재서 안쪽에
+    // 맞췄다 — atelier-storyboard와 같은 그리드(1601×2400, 동일 테두리 위치)라
+    // 값도 같다.
     slots: [
-      { x: 0.06, y: 0.10, w: 0.42, h: 0.35 },
-      { x: 0.52, y: 0.10, w: 0.42, h: 0.35 },
-      { x: 0.06, y: 0.48, w: 0.42, h: 0.35 },
-      { x: 0.52, y: 0.48, w: 0.42, h: 0.35 },
+      { x: 0.0625, y: 0.1017, w: 0.4154, h: 0.3471 },
+      { x: 0.5228, y: 0.1017, w: 0.4154, h: 0.3471 },
+      { x: 0.0625, y: 0.4817, w: 0.4154, h: 0.3471 },
+      { x: 0.5228, y: 0.4817, w: 0.4154, h: 0.3471 },
     ],
+    // compositor는 스탬프를 textAlign 'center'·textBaseline 'middle'로 그리므로
+    // x·y가 글자 중심을 가리킨다. x는 atelier-storyboard와 같은 방법으로 역산했다:
+    // "오른쪽 끝이 4번 칸(우측 하단) 오른쪽 테두리선과 같은 세로선에 온다"가
+    // 목표이고, 그 테두리선은 배경 PNG에서 1502~1505px(1601px 폭 기준)로 재둔
+    // 값이라 중심선 비율은 (1502+1505)/2/1601 = 0.939101 — atelier와 같은 값이다
+    // (같은 그리드). Space Mono는 고정폭 폰트라 날짜별 오른쪽 끝 흔들림이
+    // ±0.84px(2024~2035년 432개 샘플)로 거의 없어 median으로 바로 썼다.
+    // y는 VOL.II 태그(배경 PNG에서 y 2009~2048px로 잰 값) 바로 아래, 세로
+    // 텍스트("ATOM REGULAR PERFORMANCE", x 1529px 이상이라 이 x 위치와 안 겹침)와
+    // 겹치지 않는 위치를 Playwright 스크린샷으로 확인해 잡았다.
+    dateStamp: {
+      x: 0.8891,
+      y: 0.867,
+      fontFamily: 'Space Mono',
+      // fontSize는 프레임 폭 대비 비율이다(types.ts). 36px / 1601px.
+      fontSize: 0.0225,
+      color: '#FFFFFF',
+      format: 'YYYY.MM.DD',
+    },
   },
   {
     id: 'six-grid',
