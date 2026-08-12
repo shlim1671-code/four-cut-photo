@@ -64,14 +64,16 @@ export const frames: FrameDefinition[] = [
     backgroundImage: atelierStoryboardBg,
     foregroundImage: atelierStoryboardFg,
     // compositor는 스탬프를 textAlign 'center'·textBaseline 'middle'로 그리므로
-    // x·y가 글자 중심을 가리킨다. Playwright 렌더 스크린샷을 원본 Canva
-    // 디자인(우측 하단, ATELIER'S STORYBOARD 텍스트 아래)과 맞대어 보며 잡은
-    // 값이다 — 원본이 파일로 없어 픽셀 좌표를 직접 재지는 못했다.
-    // Special Elite는 숫자 폭이 고정이 아니라 날짜에 따라 흔들리는데,
-    // YYYY.MM.DD·41px 기준 2024~2035년 날짜로 샘플링한 잔여 오차는
-    // 가로 ±2.1px, 세로 ±1.0px로 무시할 수준이다.
+    // x·y가 글자 중심을 가리킨다. x는 "오른쪽 끝이 4번 칸(우측 하단) 오른쪽
+    // 테두리선과 같은 세로선에 온다"를 목표로 역산했다 — 그 테두리선은 배경
+    // PNG에서 1502~1505px(1601px 폭 기준)로 재둔 값이라 중심선 비율은
+    // (1502+1505)/2/1601 = 0.939101. Special Elite는 숫자 폭이 고정이 아니라
+    // 오른쪽 끝이 날짜에 따라 흔들리므로, YYYY.MM.DD·41px 기준 2024~2035년
+    // 날짜 156개로 "오른쪽 끝이 저 세로선에 오려면 필요한 x"를 각각 구해
+    // 중앙값을 썼다. 잔여 오차는 가로 ±3.05px(테두리선 두께 4px 안쪽).
+    // y는 이전 값(0.9598) 그대로 — 이번 조정은 x만 다시 잡는다.
     dateStamp: {
-      x: 0.8125,
+      x: 0.8709,
       y: 0.9598,
       fontFamily: 'Special Elite',
       // fontSize는 프레임 폭 대비 비율이다(types.ts). 41px / 1601px.
